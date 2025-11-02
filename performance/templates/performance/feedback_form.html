@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Add Feedback{% endblock %}
+
+{% block content %}
+<h2 class="text-2xl font-bold mb-4">Add Feedback</h2>
+<form method="POST">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+    <div class="mb-4">
+        <label class="block font-semibold">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <p class="text-red-600 text-sm">{{ field.errors|join:", " }}</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit"
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+        Save
+    </button>
+</form>
+{% endblock %}

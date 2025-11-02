@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Notifications</h1>
+<ul class="space-y-3">
+  {% for notif in notifications %}
+    <li class="p-4 rounded-lg shadow-sm notif-item {% if not notif.is_read %}bg-blue-50{% else %}bg-gray-50{% endif %}"
+        data-id="{{ notif.id }}">
+      <h3 class="font-semibold">{{ notif.title }}</h3>
+      <p class="text-gray-600 text-sm">{{ notif.message }}</p>
+      <p class="text-gray-400 text-xs mt-1">{{ notif.created_at|date:"M d, Y H:i" }}</p>
+    </li>
+  {% empty %}
+    <p class="text-gray-500">No notifications yet.</p>
+  {% endfor %}
+</ul>
+
+<script>
+document.querySelectorAll('.notif-item').forEach(item => {
+    item.addEventListener('click', function() {
+        const notifId = this.dataset.id;
+        fetch("{% url 'mark_notification_read' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: `id=${notifId}`
+        }).then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                this.classList.remove('bg-blue-50');
+                this.classList.add('bg-gray-50');
+                // تحديث العدّاد
+                updateNotifications();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

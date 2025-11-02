@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2 class="mb-4">Admin Dashboard</h2>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card p-3 text-center">
+        <h5>Total Students</h5>
+        <h3 id="total_students">0</h3>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card p-3 text-center">
+        <h5>Total Managers</h5>
+        <h3 id="total_managers">0</h3>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card p-3 text-center">
+        <h5>Pending Tasks</h5>
+        <h3 id="pending_tasks">0</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-3 mt-4">
+    <h5 class="mb-3">Platform Overview</h5>
+    <canvas id="adminChart"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+const ctxAdmin = document.getElementById('adminChart').getContext('2d');
+const adminChart = new Chart(ctxAdmin, {
+    type: 'bar',
+    data: {
+        labels: ['Students', 'Managers', 'Pending Tasks'],
+        datasets: [{ label: 'Counts', data: [0,0,0], backgroundColor: ['#004aad','#ff7f50','#28a745'] }]
+    },
+    options: { responsive:true }
+});
+
+function updateAdminChart() {
+    $.ajax({
+        url: "{% url 'admin_chart_data' %}",
+        method: "GET",
+        success: function(data){
+            $('#total_students').text(data.total_students);
+            $('#total_managers').text(data.total_managers);
+            $('#pending_tasks').text(data.pending_tasks);
+            adminChart.data.datasets[0].data = [data.total_students, data.total_managers, data.pending_tasks];
+            adminChart.update();
+        }
+    });
+}
+setInterval(updateAdminChart, 5000);
+updateAdminChart();
+</script>
+
+<-- Export CSV/XLSX --!>
+
+<a href="{% url 'export_tasks_csv' %}" class="btn">Export CSV</a>
+{% if HAS_OPENPYXL %}
+  <a href="{% url 'export_tasks_xlsx' %}" class="btn">Export Excel</a>
+{% endif %}
+
+{% endblock %}

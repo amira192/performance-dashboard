@@ -1,0 +1,67 @@
+{% extends 'accounts/base.html' %}
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2 class="mb-4">My Dashboard</h2>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Pending Tasks</h5>
+        <ul class="list-group list-group-flush" id="pending_list">
+          {% for task in pending_tasks %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ task.title }} <span>{{ task.due_date }}</span>
+          </li>
+          {% empty %}
+          <li class="list-group-item">No pending tasks.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Completed Tasks</h5>
+        <ul class="list-group list-group-flush" id="completed_list">
+          {% for task in completed_tasks %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ task.title }} <span>{{ task.submission_date }}</span>
+          </li>
+          {% empty %}
+          <li class="list-group-item">No completed tasks.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-3 mt-4">
+    <h5 class="mb-3">My Task Progress</h5>
+    <canvas id="studentChart"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+const ctxStudent = document.getElementById('studentChart').getContext('2d');
+const studentChart = new Chart(ctxStudent, { type:'doughnut', data:{
+    labels:['Completed Tasks','Pending Tasks'],
+    datasets:[{data:[0,0], backgroundColor:['#28a745','#ffc107']}]
+}, options:{responsive:true} });
+
+function updateStudentChart(){
+    $.ajax({
+        url:"{% url 'student_chart_data' %}",
+        method:"GET",
+        success:function(data){
+            studentChart.data.datasets[0].data = [data.completed,data.pending];
+            studentChart.update();
+        }
+    });
+}
+setInterval(updateStudentChart,5000);
+updateStudentChart();
+</script>
+{% endblock %}

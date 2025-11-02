@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Task List{% endblock %}
+
+{% block content %}
+<div class="flex-1 p-6">
+
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold">Tasks</h1>
+        <div class="space-x-2">
+            <a href="{% url 'task_create' %}" class="bg-green-500 text-white px-3 py-1 rounded">Add Task</a>
+            <a href="{% url 'export_tasks_csv' %}" class="bg-blue-500 text-white px-3 py-1 rounded">Export CSV</a>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <form method="get" class="mb-4">
+        <input type="text" name="q" placeholder="Search by title" value="{{ request.GET.q|default:'' }}" class="border px-2 py-1 rounded">
+        <button type="submit" class="bg-gray-700 text-white px-2 py-1 rounded">Search</button>
+    </form>
+
+    <!-- Task List -->
+    <div class="bg-white rounded shadow divide-y">
+        {% for task in tasks %}
+            <div class="py-3 px-4 flex justify-between items-center">
+                <div>
+                    <strong>{{ task.title }}</strong> - {{ task.status }}
+                    <div class="text-gray-500 text-sm">
+                        Due: {{ task.due_date }} | Assigned to:
+                        {% if task.assigned_to %}
+                            {{ task.assigned_to.username }}
+                        {% else %}
+                            Unassigned
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <a href="{% url 'task_update' task.pk %}" class="bg-yellow-400 text-white px-2 py-1 rounded">Edit</a>
+                    <a href="{% url 'task_delete' task.pk %}" class="bg-red-500 text-white px-2 py-1 rounded">Delete</a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="p-4 text-gray-500">No tasks found.</div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

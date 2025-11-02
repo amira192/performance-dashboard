@@ -1,0 +1,14 @@
+{% load static %}
+<div class="bg-gray-700 text-white p-4 flex justify-between items-center">
+    <button id="sidebarToggle" class="md:hidden">☰</button>
+    <div>
+        {% if user.is_authenticated %}
+            Welcome, {{ user.username }}
+            {% if user.userprofile.profile_pic %}
+                <img src="{{ user.userprofile.profile_pic.url }}" class="inline w-8 h-8 rounded-full">
+            {% else %}
+                <img src="{% static 'images/default-profile.png' %}" class="inline w-8 h-8 rounded-full">
+            {% endif %}
+        {% endif %}
+    </div>
+</div>

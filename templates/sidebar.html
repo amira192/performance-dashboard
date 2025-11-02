@@ -1,0 +1,20 @@
+<div id="sidebar" class="bg-gray-800 text-white w-64 min-h-screen p-4 hidden md:block">
+    <h2 class="text-xl font-bold mb-6">Menu</h2>
+    <ul>
+        {% if user.is_authenticated %}
+            <li class="mb-2"><a href="{% url 'profile' %}" class="hover:underline">Profile</a></li>
+            {% if user.userprofile.role == 'admin' %}
+                <li class="mb-2"><a href="{% url 'admin_dashboard' %}" class="hover:underline">Admin Dashboard</a></li>
+            {% elif user.userprofile.role == 'manager' %}
+                <li class="mb-2"><a href="{% url 'manager_dashboard' %}" class="hover:underline">Manager Dashboard</a></li>
+            {% elif user.userprofile.role == 'student' %}
+                <li class="mb-2"><a href="{% url 'student_dashboard' %}" class="hover:underline">Student Dashboard</a></li>
+            {% endif %}
+            <li class="mb-2"><a href="{% url 'task_list' %}" class="hover:underline">Tasks</a></li>
+            <li class="mb-2"><a href="{% url 'notifications_list' %}" class="hover:underline">Notifications</a></li>
+            <li><a href="{% url 'logout' %}" class="hover:underline">Logout</a></li>
+        {% else %}
+            <li><a href="{% url 'login' %}" class="hover:underline">Login</a></li>
+        {% endif %}
+    </ul>
+</div>
