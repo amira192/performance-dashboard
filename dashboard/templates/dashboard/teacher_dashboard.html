@@ -1,0 +1,31 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block dashboard_content %}
+
+<h2 class="text-xl font-bold mb-4">My Students Progress</h2>
+
+<!-- Fetch data dynamically via JSON -->
+<canvas id="teacherChart"></canvas>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch("{% url 'dashboard:dashboard_chart_data' %}")
+    .then(res => res.json())
+    .then(data => {
+        const ctx = document.getElementById('teacherChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets:[
+                    {label:'Completed', data:data.completed, backgroundColor:'#10B981'},
+                    {label:'Pending', data:data.pending, backgroundColor:'#EF4444'}
+                ]
+            },
+            options: { responsive:true, plugins:{legend:{position:'bottom'}, title:{display:true,text:'Students Progress'}} }
+        });
+    });
+});
+</script>
+
+{% endblock %}

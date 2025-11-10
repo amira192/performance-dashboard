@@ -7,4 +7,4 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('profile/edit/', EditProfileView.as_view(), name='edit_profile'),
-]
+    ]

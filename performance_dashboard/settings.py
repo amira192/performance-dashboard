@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'notifications',
     'performance',
     'dashboard',
+    'widget_tweaks',
 ]
 
 

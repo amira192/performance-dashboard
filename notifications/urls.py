@@ -1,9 +1,8 @@
 from django.urls import path
-from .views import notifications_list, notifications_count, mark_notification_read
+from . import views
 
 urlpatterns = [
-    path('', notifications_list, name='notifications_list'),
-    path('count/', notifications_count, name='notifications_count'),
-    path('mark-read/', mark_notification_read, name='mark_notification_read'),
-
+    path('', views.notifications_list, name='notifications_list'),  # main notifications page / dropdown
+    path('count/', views.notifications_count, name='notifications_count'),  # AJAX: unread count
+    path('mark-read/', views.mark_notification_read, name='mark_notification_read'),  # AJAX: mark read
 ]

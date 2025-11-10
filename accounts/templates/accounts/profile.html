@@ -4,7 +4,7 @@
 {% block title %}My Profile{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6">
+<div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 mt-10">
   <div class="flex flex-col items-center">
 
     {% if user.userprofile.profile_pic %}
@@ -18,21 +18,25 @@
     <h2 class="text-2xl font-bold mt-2">{{ user.username }}</h2>
     <p class="text-gray-600">{{ user.userprofile.role|capfirst }}</p>
 
-    <div class="mt-4 w-full">
-      <div class="mb-2">
+    <div class="mt-4 w-full space-y-3">
+      {% if user.userprofile.bio %}
+      <div>
         <h3 class="font-semibold text-gray-700">Bio</h3>
         <p class="text-gray-800">{{ user.userprofile.bio }}</p>
       </div>
+      {% endif %}
 
-      <div class="mb-2">
+      <div>
         <h3 class="font-semibold text-gray-700">Email</h3>
         <p class="text-gray-800">{{ user.email }}</p>
       </div>
 
-      <div class="mb-2">
+      {% if user.userprofile.telephone %}
+      <div>
         <h3 class="font-semibold text-gray-700">Telephone</h3>
         <p class="text-gray-800">{{ user.userprofile.telephone }}</p>
       </div>
+      {% endif %}
     </div>
 
     <a href="{% url 'edit_profile' %}"

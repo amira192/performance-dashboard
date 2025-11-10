@@ -1,20 +1,98 @@
-<div id="sidebar" class="bg-gray-800 text-white w-64 min-h-screen p-4 hidden md:block">
-    <h2 class="text-xl font-bold mb-6">Menu</h2>
-    <ul>
-        {% if user.is_authenticated %}
-            <li class="mb-2"><a href="{% url 'profile' %}" class="hover:underline">Profile</a></li>
+<div id="sidebar" class="bg-gray-800 text-white w-64 min-h-screen p-6 hidden md:block shadow-lg">
+    <!-- Home  -->
+    <div class="flex flex-col items-start mb-8">
+        <div class="flex items-center mb-2">
+            <i class="fas fa-home text-2xl mr-2 text-blue-400"></i>
+            <span class="text-2xl font-bold">Home</span>
+        </div>
+    </div>
+
+    <hr class="border-gray-600 mb-6">
+
+    <!-- Menu -->
+    <ul class="space-y-5">
+        {% if user.is_authenticated and user.userprofile %}
             {% if user.userprofile.role == 'admin' %}
-                <li class="mb-2"><a href="{% url 'admin_dashboard' %}" class="hover:underline">Admin Dashboard</a></li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <a href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-user-graduate"></i>
+                    <a href="{% url 'add_student' %}">Add Student</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-book"></i>
+                    <a href="{% url 'add_course' %}">Add Course</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-tasks"></i>
+                    <a href="{% url 'task_list' %}">Add Task</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-calendar-alt"></i>
+                    <a href="{% url 'leave_list' %}">Leaves / Absences</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-comments"></i>
+                    <a href="{% url 'feedback_list' %}">Feedbacks</a>
+                </li>
+
             {% elif user.userprofile.role == 'manager' %}
-                <li class="mb-2"><a href="{% url 'manager_dashboard' %}" class="hover:underline">Manager Dashboard</a></li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <a href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-user-graduate"></i>
+                    <a href="{% url 'add_student' %}">Students</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-book"></i>
+                    <a href="{% url 'add_course' %}">Courses</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-tasks"></i>
+                    <a href="{% url 'task_list' %}">Tasks</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-calendar-alt"></i>
+                    <a href="{% url 'leave_list' %}">Leaves</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-comments"></i>
+                    <a href="{% url 'feedback_list' %}">Feedbacks</a>
+                </li>
+
             {% elif user.userprofile.role == 'student' %}
-                <li class="mb-2"><a href="{% url 'student_dashboard' %}" class="hover:underline">Student Dashboard</a></li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <a href="{% url 'dashboard' %}">Dashboard</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-tasks"></i>
+                    <a href="{% url 'task_list' %}">My Tasks</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-calendar-alt"></i>
+                    <a href="{% url 'leave_list' %}">My Leaves</a>
+                </li>
+                <li class="flex items-center space-x-3 hover:text-blue-400 transition">
+                    <i class="fas fa-comments"></i>
+                    <a href="{% url 'feedback_list' %}">My Feedbacks</a>
+                </li>
             {% endif %}
-            <li class="mb-2"><a href="{% url 'task_list' %}" class="hover:underline">Tasks</a></li>
-            <li class="mb-2"><a href="{% url 'notifications_list' %}" class="hover:underline">Notifications</a></li>
-            <li><a href="{% url 'logout' %}" class="hover:underline">Logout</a></li>
-        {% else %}
-            <li><a href="{% url 'login' %}" class="hover:underline">Login</a></li>
         {% endif %}
     </ul>
+
+    <!-- Logout -->
+    <div class="mt-10 border-t border-gray-600 pt-4">
+        <a href="{% url 'logout' %}" class="flex items-center space-x-3 text-red-500 hover:text-red-400 transition">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </div>
 </div>
+
+<!-- Font Awesome (for icons) -->
+<script src="https://kit.fontawesome.com/a2e0e6b6c6.js" crossorigin="anonymous"></script>

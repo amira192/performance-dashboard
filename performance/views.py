@@ -1,78 +1,141 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
-from django.http import HttpResponse, HttpResponseForbidden
-from .models import Task, Submission, Feedback
-from .forms import TaskForm, SubmissionForm, FeedbackForm
-from accounts.models import UserProfile
 from django.views.generic import ListView
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.contrib import messages
 import csv
+from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
 
-# ---------------- Dashboard Views ----------------
-class AdminDashboardView(LoginRequiredMixin, View):
+from accounts.models import UserProfile
+from .models import Task, Submission, Feedback, Course, Leave
+from .forms import TaskForm, FeedbackForm, AddStudentForm, CourseForm, LeaveForm
+
+
+# ==========================
+# Dashboard
+# ==========================
+class DashboardView(LoginRequiredMixin, View):
     def get(self, request):
-        if request.user.userprofile.role != 'admin':
+        role = request.user.userprofile.role
+        notifications = request.user.notifications.order_by('-created_at')[:5]
+
+        if role == 'admin':
+            context = {
+                'role': 'admin',
+                'total_students': UserProfile.objects.filter(role='student').count(),
+                'total_teachers': UserProfile.objects.filter(role='teacher').count(),
+                'completed_tasks': Submission.objects.filter(status='completed').count(),
+                'pending_tasks': Submission.objects.filter(status='pending').count(),
+                'notifications': notifications,
+            }
+            template_name = 'dashboard/admin_dashboard.html'
+
+        elif role == 'teacher':
+            students = UserProfile.objects.filter(role='student')
+            context = {
+                'role': 'teacher',
+                'students': students,
+                'completed_tasks': Submission.objects.filter(status='completed').count(),
+                'pending_tasks': Submission.objects.filter(status='pending').count(),
+                'notifications': notifications,
+            }
+            template_name = 'dashboard/teacher_dashboard.html'
+
+        elif role == 'student':
+            student = request.user
+            context = {
+                'role': 'student',
+                'completed': Submission.objects.filter(student=student, status='completed').count(),
+                'pending': Submission.objects.filter(student=student, status='pending').count(),
+                'tasks': Task.objects.filter(assigned_to=student),
+                'notifications': notifications,
+            }
+            template_name = 'dashboard/student_dashboard.html'
+
+        else:
             return HttpResponseForbidden("You are not authorized.")
-        total_students = UserProfile.objects.filter(role='student').count()
-        total_managers = UserProfile.objects.filter(role='manager').count()
-        pending_tasks = Task.objects.filter(status='pending').count()
-        context = {
-            'total_students': total_students,
-            'total_managers': total_managers,
-            'pending_tasks': pending_tasks
+
+        return render(request, template_name, context)
+
+
+# ==========================
+# Dashboard Chart Data
+# ==========================
+@login_required
+def dashboard_chart_data(request):
+    role = request.user.userprofile.role
+    if role == 'admin':
+        data = {
+            'students': UserProfile.objects.filter(role='student').count(),
+            'teachers': UserProfile.objects.filter(role='teacher').count(),
+            'completed': Submission.objects.filter(status='completed').count(),
+            'pending': Submission.objects.filter(status='pending').count(),
         }
-        return render(request, 'dashboard/admin_dashboard.html', context)
-
-
-class ManagerDashboardView(LoginRequiredMixin, View):
-    def get(self, request):
-        if request.user.userprofile.role != 'manager':
-            return HttpResponseForbidden("You are not authorized.")
+    elif role == 'teacher':
         students = UserProfile.objects.filter(role='student')
-        return render(request, 'dashboard/manager_dashboard.html', {'students': students})
+        labels = [s.user.username for s in students]
+        completed = [Submission.objects.filter(student=s.user, status='completed').count() for s in students]
+        pending = [Submission.objects.filter(student=s.user, status='pending').count() for s in students]
+        data = {'labels': labels, 'completed': completed, 'pending': pending}
+    else:  # student
+        student = request.user
+        data = {
+            'completed': Submission.objects.filter(student=student, status='completed').count(),
+            'pending': Submission.objects.filter(student=student, status='pending').count()
+        }
+    return JsonResponse(data)
 
 
-class StudentDashboardView(LoginRequiredMixin, View):
-    def get(self, request):
-        if request.user.userprofile.role != 'student':
-            return HttpResponseForbidden("You are not authorized.")
-        submissions = Submission.objects.filter(student=request.user)
-        return render(request, 'dashboard/student_dashboard.html', {'submissions': submissions})
 
+# Feedback Views
 
-# ---------------- Feedback Views ----------------
 class FeedbackListView(LoginRequiredMixin, View):
     def get(self, request):
         role = request.user.userprofile.role
-        if role not in ['admin', 'manager']:
-            return HttpResponseForbidden("You are not authorized.")
-        if role == 'admin':
+
+        if role == 'teacher' or role == 'admin':
+
             feedbacks = Feedback.objects.all()
-        else:  # manager
-            feedbacks = Feedback.objects.filter(student__userprofile__supervisor=request.user)
+        elif role == 'student':
+
+            feedbacks = Feedback.objects.filter(student=request.user)
+        else:
+            return HttpResponseForbidden("Not authorized")
+
         return render(request, 'performance/feedback_list.html', {'feedbacks': feedbacks})
 
 
+
+# Feedback Create (Only Teacher)
 class FeedbackCreateView(LoginRequiredMixin, View):
     def get(self, request):
-        if request.user.userprofile.role not in ['admin', 'manager']:
-            return HttpResponseForbidden("You are not authorized.")
+
+        if request.user.userprofile.role != 'teacher':
+            return HttpResponseForbidden("Only teachers can give feedback")
         form = FeedbackForm()
         return render(request, 'performance/feedback_form.html', {'form': form})
 
     def post(self, request):
-        if request.user.userprofile.role not in ['admin', 'manager']:
-            return HttpResponseForbidden("You are not authorized.")
+        if request.user.userprofile.role != 'teacher':
+            return HttpResponseForbidden("Only teachers can give feedback")
+
         form = FeedbackForm(request.POST)
         if form.is_valid():
             feedback = form.save(commit=False)
-            feedback.manager = request.user
+            feedback.teacher = request.user
             feedback.save()
+            messages.success(request, "Feedback added successfully")
             return redirect('feedback_list')
+
         return render(request, 'performance/feedback_form.html', {'form': form})
 
 
-# ---------------- Task Views ----------------
+
+
+# Task Views
+
 class TaskListView(ListView):
     model = Task
     template_name = 'performance/task_list.html'
@@ -80,33 +143,29 @@ class TaskListView(ListView):
     paginate_by = 5
 
     def get_queryset(self):
-        query = self.request.GET.get('q')
         qs = Task.objects.all().order_by('-due_date')
+        query = self.request.GET.get('q')
         if query:
             qs = qs.filter(title__icontains=query)
         return qs
 
 
 def task_create(request):
-    if request.method == 'POST':
-        form = TaskForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('task_list')
-    else:
-        form = TaskForm()
+    form = TaskForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, "Task created successfully!")
+        return redirect('task_list')
     return render(request, 'performance/task_form.html', {'form': form})
 
 
 def task_update(request, pk):
     task = get_object_or_404(Task, pk=pk)
-    if request.method == 'POST':
-        form = TaskForm(request.POST, instance=task)
-        if form.is_valid():
-            form.save()
-            return redirect('task_list')
-    else:
-        form = TaskForm(instance=task)
+    form = TaskForm(request.POST or None, instance=task)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Task updated successfully!")
+        return redirect('task_list')
     return render(request, 'performance/task_form.html', {'form': form})
 
 
@@ -114,6 +173,7 @@ def task_delete(request, pk):
     task = get_object_or_404(Task, pk=pk)
     if request.method == 'POST':
         task.delete()
+        messages.success(request, "Task deleted successfully!")
         return redirect('task_list')
     return render(request, 'performance/task_confirm_delete.html', {'task': task})
 
@@ -124,6 +184,69 @@ def export_tasks_csv(request):
     response['Content-Disposition'] = 'attachment; filename="tasks.csv"'
     writer = csv.writer(response)
     writer.writerow(['Title', 'Description', 'Status', 'Due Date', 'Assigned To'])
-    for task in tasks:
-        writer.writerow([task.title, task.description, task.status, task.due_date, task.assigned_to.username if task.assigned_to else 'Unassigned'])
+    for t in tasks:
+        writer.writerow([t.title, t.description, t.status, t.due_date, t.assigned_to.username if t.assigned_to else 'Unassigned'])
     return response
+
+
+
+# Student Views
+
+class AddStudentView(LoginRequiredMixin, View):
+    def get(self, request):
+        form = AddStudentForm()
+        return render(request, 'performance/add_student.html', {'form': form})
+
+    def post(self, request):
+        form = AddStudentForm(request.POST)
+        if form.is_valid():
+            student_profile = form.save(commit=False)
+            student_profile.role = 'student'
+            student_profile.save()
+            messages.success(request, "Student added successfully!")
+            return redirect('add_student')
+        return render(request, 'performance/add_student.html', {'form': form})
+
+
+
+# Course Views
+
+class AddCourseView(LoginRequiredMixin, View):
+    def get(self, request):
+        form = CourseForm()
+        return render(request, 'performance/add_course.html', {'form': form})
+
+    def post(self, request):
+        form = CourseForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Course added successfully!")
+            return redirect('add_course')
+        return render(request, 'performance/add_course.html', {'form': form})
+
+
+
+# Leave Views
+
+class LeaveListView(LoginRequiredMixin, View):
+    def get(self, request):
+        role = request.user.userprofile.role
+        leaves = Leave.objects.filter(student=request.user) if role == 'student' else Leave.objects.all()
+        return render(request, 'performance/leave_list.html', {'leaves': leaves})
+
+
+class LeaveCreateView(LoginRequiredMixin, View):
+    def get(self, request):
+        form = LeaveForm()
+        return render(request, 'performance/leave_form.html', {'form': form})
+
+    def post(self, request):
+        form = LeaveForm(request.POST)
+        if form.is_valid():
+            leave = form.save(commit=False)
+            if request.user.userprofile.role == 'student':
+                leave.student = request.user
+            leave.save()
+            messages.success(request, "Leave request submitted successfully!")
+            return redirect('leave_list')
+        return render(request, 'performance/leave_form.html', {'form': form})

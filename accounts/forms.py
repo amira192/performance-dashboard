@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from .models import UserProfile
 
-
 class UserRegisterForm(UserCreationForm):
     email = forms.EmailField(required=True)
     role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES, required=True)
@@ -17,10 +16,9 @@ class UserRegisterForm(UserCreationForm):
         user.email = self.cleaned_data['email']
         if commit:
             user.save()
-            UserProfile.objects.create(
-                user=user,
-                role=self.cleaned_data['role']
-            )
+            profile, created = UserProfile.objects.get_or_create(user=user)
+            profile.role = self.cleaned_data['role']
+            profile.save()
         return user
 
 
@@ -35,4 +33,4 @@ class UserUpdateForm(forms.ModelForm):
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ['role', 'profile_pic', 'bio', 'telephone']
+        fields = ['role', 'profile_pic', 'bio', 'telephone', 'teacher']

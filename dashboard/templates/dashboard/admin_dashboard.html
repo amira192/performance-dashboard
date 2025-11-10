@@ -1,72 +1,110 @@
-{% extends 'base.html' %}
-{% block title %}Admin Dashboard{% endblock %}
+{% extends 'dashboard/base_dashboard.html' %}
 
-{% block content %}
-<div class="container">
-  <h2 class="mb-4">Admin Dashboard</h2>
+{% block dashboard_content %}
 
-  <div class="row g-4">
-    <div class="col-md-4">
-      <div class="card p-3 text-center">
-        <h5>Total Students</h5>
-        <h3 id="total_students">0</h3>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card p-3 text-center">
-        <h5>Total Managers</h5>
-        <h3 id="total_managers">0</h3>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card p-3 text-center">
-        <h5>Pending Tasks</h5>
-        <h3 id="pending_tasks">0</h3>
-      </div>
-    </div>
-  </div>
+<!-- Stats Cards -->
 
-  <div class="card p-3 mt-4">
-    <h5 class="mb-3">Platform Overview</h5>
-    <canvas id="adminChart"></canvas>
-  </div>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <h5 class="text-gray-500 text-sm">Students</h5>
+        <h3 id="totalStudents" class="text-2xl font-bold text-blue-500">0</h3>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <h5 class="text-gray-500 text-sm">Teachers</h5>
+        <h3 id="totalTeachers" class="text-2xl font-bold text-green-500">0</h3>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <h5 class="text-gray-500 text-sm">Courses</h5>
+        <h3 id="totalCourses" class="text-2xl font-bold text-yellow-500">0</h3>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <h5 class="text-gray-500 text-sm">Total Tasks</h5>
+        <h3 id="totalTasks" class="text-2xl font-bold text-gray-800">0</h3>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <h5 class="text-gray-500 text-sm">Completed Tasks</h5>
+        <h3 id="completedTasks" class="text-2xl font-bold text-teal-500">0</h3>
+    </div>
+    <div class="bg-white rounded-lg shadow p-4 text-center">
+        <h5 class="text-gray-500 text-sm">Pending Tasks</h5>
+        <h3 id="pendingTasks" class="text-2xl font-bold text-red-500">0</h3>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- ==================== -->
+<!-- Charts (Side by Side) -->
+<!-- ==================== -->
+<div class="flex flex-wrap gap-6 justify-center">
+    <!-- Users & Courses Chart -->
+    <div class="w-80 h-80 bg-white p-4 rounded-lg shadow">
+        <canvas id="usersChart"></canvas>
+    </div>
+
+    <!-- Tasks Overview Chart -->
+    <div class="w-80 h-80 bg-white p-4 rounded-lg shadow">
+        <canvas id="tasksChart"></canvas>
+    </div>
+</div>
+
 <script>
-const ctxAdmin = document.getElementById('adminChart').getContext('2d');
-const adminChart = new Chart(ctxAdmin, {
-    type: 'bar',
-    data: {
-        labels: ['Students', 'Managers', 'Pending Tasks'],
-        datasets: [{ label: 'Counts', data: [0,0,0], backgroundColor: ['#004aad','#ff7f50','#28a745'] }]
-    },
-    options: { responsive:true }
+document.addEventListener('DOMContentLoaded', function() {
+    fetch("{% url 'dashboard:dashboard_chart_data' %}")
+    .then(res => res.json())
+    .then(data => {
+        console.log("Dashboard JSON Data:", data);
+
+        // تحديث Cards
+        document.getElementById('totalStudents').textContent = data.students;
+        document.getElementById('totalTeachers').textContent = data.teachers;
+        document.getElementById('totalCourses').textContent = data.total_courses;
+        document.getElementById('totalTasks').textContent = data.total_tasks;
+        document.getElementById('completedTasks').textContent = data.completed_tasks;
+        document.getElementById('pendingTasks').textContent = data.pending_tasks;
+
+        // Chart 1: Users & Courses
+        const ctxUsers = document.getElementById('usersChart').getContext('2d');
+        new Chart(ctxUsers, {
+            type: 'doughnut',
+            data: {
+                labels: ['Students','Teachers','Courses'],
+                datasets:[{
+                    data:[data.students, data.teachers, data.total_courses],
+                    backgroundColor:['#3B82F6','#10B981','#FBBF24']
+                }]
+            },
+            options:{
+                responsive:true,
+                maintainAspectRatio:false,
+                plugins:{
+                    legend:{position:'bottom'},
+                    title:{display:true,text:'Users & Courses'}
+                }
+            }
+        });
+
+        // Chart 2: Tasks Overview
+        const ctxTasks = document.getElementById('tasksChart').getContext('2d');
+        new Chart(ctxTasks, {
+            type: 'doughnut',
+            data: {
+                labels:['Total Tasks','Completed','Pending'],
+                datasets:[{
+                    data:[data.total_tasks, data.completed_tasks, data.pending_tasks],
+                    backgroundColor:['#6B7280','#14B8A6','#EF4444']
+                }]
+            },
+            options:{
+                responsive:true,
+                maintainAspectRatio:false,
+                plugins:{
+                    legend:{position:'bottom'},
+                    title:{display:true,text:'Tasks Overview'}
+                }
+            }
+        });
+    })
+    .catch(err => console.error("Error fetching dashboard data:", err));
 });
-
-function updateAdminChart() {
-    $.ajax({
-        url: "{% url 'admin_chart_data' %}",
-        method: "GET",
-        success: function(data){
-            $('#total_students').text(data.total_students);
-            $('#total_managers').text(data.total_managers);
-            $('#pending_tasks').text(data.pending_tasks);
-            adminChart.data.datasets[0].data = [data.total_students, data.total_managers, data.pending_tasks];
-            adminChart.update();
-        }
-    });
-}
-setInterval(updateAdminChart, 5000);
-updateAdminChart();
 </script>
-
-<-- Export CSV/XLSX --!>
-
-<a href="{% url 'export_tasks_csv' %}" class="btn">Export CSV</a>
-{% if HAS_OPENPYXL %}
-  <a href="{% url 'export_tasks_xlsx' %}" class="btn">Export Excel</a>
-{% endif %}
 
 {% endblock %}

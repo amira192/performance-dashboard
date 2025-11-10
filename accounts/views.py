@@ -1,16 +1,12 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
-from django.contrib.auth.models import User
 from .forms import UserRegisterForm, UserUpdateForm, UserProfileForm
 from .models import UserProfile
 
-class AdminOnlyView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = 'is_staff'
-
-
+# ---------------- Register ----------------
 class RegisterView(View):
     def get(self, request):
         form = UserRegisterForm()
@@ -25,6 +21,7 @@ class RegisterView(View):
         return render(request, 'accounts/register.html', {'form': form})
 
 
+# ---------------- Login ----------------
 class LoginView(View):
     def get(self, request):
         return render(request, 'accounts/login.html')
@@ -32,54 +29,46 @@ class LoginView(View):
     def post(self, request):
         username = request.POST.get('username')
         password = request.POST.get('password')
-
         user = authenticate(request, username=username, password=password)
-        if user is not None:
+        if user:
             login(request, user)
             messages.success(request, f"Welcome back, {user.username}!")
+            # توجيه عام فقط للملف الشخصي
             return redirect('profile')
         else:
             messages.error(request, "Invalid username or password.")
             return render(request, 'accounts/login.html')
 
 
+# ---------------- Logout ----------------
 def logout_view(request):
     logout(request)
     messages.info(request, "You have been logged out.")
     return redirect('login')
 
 
+# ---------------- Profile ----------------
 class ProfileView(LoginRequiredMixin, View):
     def get(self, request):
-        profile, created = UserProfile.objects.get_or_create(
-            user=request.user,
-            defaults={'role': 'default_role'}
-        )
+        profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={'role': 'student'})
         return render(request, 'accounts/profile.html', {'profile': profile})
 
 
+# ---------------- Edit Profile ----------------
 class EditProfileView(LoginRequiredMixin, View):
     def get(self, request):
-        profile, created = UserProfile.objects.get_or_create(
-            user=request.user,
-            defaults={'role': 'default_role'}
-        )
+        profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={'role': 'student'})
         u_form = UserUpdateForm(instance=request.user)
         p_form = UserProfileForm(instance=profile)
         return render(request, 'accounts/edit_profile.html', {'u_form': u_form, 'p_form': p_form})
 
     def post(self, request):
-        profile, created = UserProfile.objects.get_or_create(
-            user=request.user,
-            defaults={'role': 'default_role'}
-        )
+        profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={'role': 'student'})
         u_form = UserUpdateForm(request.POST, instance=request.user)
         p_form = UserProfileForm(request.POST, request.FILES, instance=profile)
-
         if u_form.is_valid() and p_form.is_valid():
             u_form.save()
             p_form.save()
             messages.success(request, "Your profile has been updated successfully.")
             return redirect('profile')
-
         return render(request, 'accounts/edit_profile.html', {'u_form': u_form, 'p_form': p_form})
